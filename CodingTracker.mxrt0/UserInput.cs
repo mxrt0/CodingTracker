@@ -8,6 +8,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using System.Reflection;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace CodingTracker.mxrt0
@@ -17,7 +18,7 @@ namespace CodingTracker.mxrt0
         private readonly MyCodingTrackerDatabase _db;
         private readonly string InvalidCommandMessage = "[italic][red]\nInvalid command. [yellow bold]Please enter a [italic]number [italic][red]from 0-5!\n[/][/][/][/][/][/]";
         private readonly string EnterIdMessage = "[magenta2][slowblink]\nPlease enter the ID of the record you wish to view. Type 0 to return to main menu.\n[/][/]";
-        private long timeTracker;
+
         public UserInput(MyCodingTrackerDatabase codingController)
         {
             _db = codingController;
@@ -32,10 +33,11 @@ namespace CodingTracker.mxrt0
                 AnsiConsole.MarkupLine($"[magenta3_1]What would you like to do?\n[/]");
                 AnsiConsole.MarkupLine($"[mediumturquoise]Type 0 to [italic][red bold]Close Application[/][/][/]");
                 AnsiConsole.MarkupLine($"[mediumturquoise]Type 1 to [italic][mediumturquoise bold]View [orange3 bold]All [italic][mediumturquoise bold]Records[/][/][/][/][/][/]");
-                AnsiConsole.MarkupLine($"[mediumturquoise]Type 2 to [italic][mediumturquoise bold]View Record[/][/][/]");
-                AnsiConsole.MarkupLine($"[mediumturquoise]Type 3 to [italic][yellow2 bold]Add New [italic][mediumturquoise bold]Record[/][/][/][/][/]");
-                AnsiConsole.MarkupLine($"[mediumturquoise]Type 4 to [italic][red bold]Delete [italic][mediumturquoise bold]Record[/][/][/][/][/]");
-                AnsiConsole.MarkupLine($"[mediumturquoise]Type 5 to [italic][chartreuse2 bold]Update [italic][mediumturquoise bold]Record\n[/][/][/][/][/]");
+                AnsiConsole.MarkupLine($"[mediumturquoise]Type 2 to [italic][yellow bold]Filter [italic][mediumturquoise bold]Records[/][/][/][/][/]");
+                AnsiConsole.MarkupLine($"[mediumturquoise]Type 3 to [italic][mediumturquoise bold]View Record[/][/][/]");
+                AnsiConsole.MarkupLine($"[mediumturquoise]Type 4 to [italic][yellow2 bold]Add New [italic][mediumturquoise bold]Record[/][/][/][/][/]");
+                AnsiConsole.MarkupLine($"[mediumturquoise]Type 5 to [italic][red bold]Delete [italic][mediumturquoise bold]Record[/][/][/][/][/]");
+                AnsiConsole.MarkupLine($"[mediumturquoise]Type 6 to [italic][chartreuse2 bold]Update [italic][mediumturquoise bold]Record\n[/][/][/][/][/]");
 
                 string? userInput = Console.ReadLine();
 
@@ -60,21 +62,29 @@ namespace CodingTracker.mxrt0
                     GetAll();
                     break;
                 case "2":
-                    ViewRecord();
+                    Filter();
                     break;
                 case "3":
-                    AddRecord();
+                    ViewRecord();
                     break;
                 case "4":
-                    DeleteRecord();
+                    AddRecord();
                     break;
                 case "5":
+                    DeleteRecord();
+                    break;
+                case "6":
                     UpdateRecord();
                     break;
                 default:
                     AnsiConsole.MarkupLine(InvalidCommandMessage);
                     break;
             }
+        }
+
+        private void Filter()
+        {
+            throw new NotImplementedException();
         }
 
         private void ViewRecord()
@@ -103,8 +113,13 @@ namespace CodingTracker.mxrt0
 
                 codingSession = _db.GetRecordById(id);
             }
-
-            AnsiConsole.MarkupLine($"[magenta2]\n{{ Id: {codingSession.Id}, Date: {codingSession.Date}, Start Time: {codingSession.StartTime}, End Time: {codingSession.EndTime} Duration: {codingSession.Duration} }}\n[/]");
+            Table singleItemTable = new Table();
+            foreach (var property in codingSession.GetType().GetProperties())
+            {
+                singleItemTable.AddColumn(property.Name.ToString(), c => c.Centered());
+            }
+            singleItemTable.AddRow(new string[] { codingSession.Id.ToString(), codingSession.Date, codingSession.StartTime, codingSession.EndTime, codingSession.Duration });
+            AnsiConsole.Write(singleItemTable); 
         }
 
         private void UpdateRecord()
@@ -160,12 +175,19 @@ namespace CodingTracker.mxrt0
             }
             else
             {
+                Table table = new Table();
+                foreach (var property in typeof(CodingSession).GetProperties())
+                {
+                    table.AddColumn(property.Name.ToString(), c => c.Centered());
+                }
                 foreach (var codingSession in allRecords)
                 {
-                    AnsiConsole.MarkupLine($"[magenta2]\n{{ Id: {codingSession.Id}, Date: {codingSession.Date}, Start Time: {codingSession.StartTime}, End Time: {codingSession.EndTime}, Duration: {codingSession.Duration} }}\n[/]");
+                    table.AddRow(new string[] { codingSession.Id.ToString(), codingSession.Date, codingSession.StartTime, codingSession.EndTime, codingSession.Duration });
                 }
+                table.Border(TableBorder.Rounded);
+                table.ShowRowSeparators();
+                AnsiConsole.Write(table);
             }
-       
         }
 
         private void DeleteRecord()
