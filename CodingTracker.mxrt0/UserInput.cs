@@ -84,9 +84,45 @@ namespace CodingTracker.mxrt0
 
         private void Filter()
         {
-            throw new NotImplementedException();
-        }
+            List<CodingSession> allRecords = _db.GetAllRecords();
+            AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease select filter type: (days/weeks/years). Type 0 to return to main menu.\n[/][/]");
+            string filterType = Console.ReadLine();
+            List<CodingSession> filteredRecords;
+            switch (filterType)
+            {
+                case "days":
+                    AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease select starting date: (Format: dd-MM-yyyy): \n[/][/]");
+                    string? startDateInput = Console.ReadLine();
+                    DateTime startDate = DateTime.ParseExact(Validation.ValidateDate(startDateInput), "dd-MM-yyyy", CultureInfo.InvariantCulture);
 
+                    AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease select end date: (Format: dd-MM-yyyy) or type 1 to only filter by previous date: \n[/][/]");
+                    string? endDateInput = Console.ReadLine();
+                    DateTime endDate = (endDateInput == "1") ? startDate 
+                        : DateTime.ParseExact(Validation.ValidateDate(endDateInput), "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
+                    filteredRecords = allRecords.Where(r =>
+                    {
+                        DateTime recordDate = DateTime.ParseExact(r.Date, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+                        return recordDate >= startDate && recordDate <= endDate;
+                    }).ToList();
+
+                    Table table = new Table();
+                    foreach (var property in typeof(CodingSession).GetProperties())
+                    {
+                        table.AddColumn(property.Name.ToString(), c => c.Centered());
+                    }
+                    foreach (var codingSession in filteredRecords)
+                    {
+                        table.AddRow(new string[] { codingSession.Id.ToString(), codingSession.Date, codingSession.StartTime, codingSession.EndTime, codingSession.Duration });
+                    }
+                    table.Border(TableBorder.Rounded);
+                    table.ShowRowSeparators();
+                    AnsiConsole.Write(table);
+                    break;
+
+            }
+            
+        }
         private void ViewRecord()
         {
             AnsiConsole.MarkupLine(EnterIdMessage);
