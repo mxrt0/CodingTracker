@@ -27,7 +27,7 @@ namespace CodingTracker.mxrt0
             return id;
         }
 
-        public static string ValidateDate(string userDateInput) 
+        public static string ValidateDate(string? userDateInput = "") 
         {
             while (!DateTime.TryParseExact(userDateInput, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
             {
@@ -41,7 +41,7 @@ namespace CodingTracker.mxrt0
             return userDateInput;
         }
 
-        public static string ValidateTime(string timeInput)
+        public static string ValidateTime(string? timeInput = "")
         {
             while (!TimeSpan.TryParseExact(timeInput, "h\\:mm", CultureInfo.InvariantCulture, out _))
             {
@@ -53,6 +53,12 @@ namespace CodingTracker.mxrt0
                 }
             }
             return timeInput;
+        }
+
+        public static void InvalidId(int id) 
+        {
+            AnsiConsole.MarkupLine($"[red][italic]\nRecord with ID [red bold]{id} does not exist.[/][/][/]");
+            AnsiConsole.MarkupLine("[yellow bold]\nPlease enter a valid record ID or [magenta2]type 0 to return to Main Menu:\n[/][/]");
         }
     }
 }

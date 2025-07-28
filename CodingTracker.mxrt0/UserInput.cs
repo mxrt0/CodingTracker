@@ -14,6 +14,8 @@ namespace CodingTracker.mxrt0
     public class UserInput
     {
         private readonly MyCodingTrackerDatabase _db;
+        private readonly string InvalidCommandMessage = "[italic][red]\nInvalid command. [yellow bold]Please enter a [italic]number [italic][red]from 0-5!\n[/][/][/][/][/][/]";
+        private readonly string EnterIdMessage = "[magenta2][slowblink]\nPlease enter the ID of the record you wish to view. Type 0 to return to main menu.\n[/][/]";
         public UserInput(MyCodingTrackerDatabase codingController)
         {
             _db = codingController;
@@ -33,15 +35,16 @@ namespace CodingTracker.mxrt0
                 AnsiConsole.MarkupLine($"[mediumturquoise]Type 4 to [italic][red bold]Delete [italic][mediumturquoise bold]Record[/][/][/][/][/]");
                 AnsiConsole.MarkupLine($"[mediumturquoise]Type 5 to [italic][chartreuse2 bold]Update [italic][mediumturquoise bold]Record\n[/][/][/][/][/]");
 
-                string userInput = Console.ReadLine();
+                string? userInput = Console.ReadLine();
 
                 while (string.IsNullOrWhiteSpace(userInput))
                 {
-                    AnsiConsole.MarkupLine($"[italic][red]\nInvalid command. [yellow bold]Please enter a number [italic][red]from 0-4!\n[/][/][/][/][/]");
+                    AnsiConsole.MarkupLine(InvalidCommandMessage);
                     userInput = Console.ReadLine();
                 }
                 HandleUserInput(userInput, ref closeApp);
             }
+            Environment.Exit(0);
         }
         public void HandleUserInput(string userInput, ref bool closeApp)
         {
@@ -50,7 +53,6 @@ namespace CodingTracker.mxrt0
                 case "0":
                     AnsiConsole.MarkupLine("[green1 bold]\nGoodbye!\n[/]");
                     closeApp = true;
-                    Environment.Exit(0);
                     break;
                 case "1":
                     GetAll();
@@ -68,14 +70,14 @@ namespace CodingTracker.mxrt0
                     UpdateRecord();
                     break;
                 default:
-                    AnsiConsole.MarkupLine("[red][italic]\nInvalid command! [yellow bold]Enter number [italic][red]from 0-4.\n[/][/][/][/][/]");
+                    AnsiConsole.MarkupLine(InvalidCommandMessage);
                     break;
             }
         }
 
         private void ViewRecord()
         {
-            AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease enter the ID of the record you wish to view. Type 0 to return to main menu.\n[/][/]");
+            AnsiConsole.MarkupLine(EnterIdMessage);
 
             string? idInput = Console.ReadLine();
 
@@ -85,8 +87,7 @@ namespace CodingTracker.mxrt0
 
             while (codingSession.Id == 0)
             {
-                AnsiConsole.MarkupLine($"[red][italic]\nRecord with ID [red bold]{id} does not exist.[/][/][/]");
-                AnsiConsole.MarkupLine("[yellow bold]\nPlease enter a valid record ID or [magenta2]type 0 to return to Main Menu:\n[/][/]");
+                Validation.InvalidId(id);
 
                 idInput = Console.ReadLine();
 
@@ -106,7 +107,7 @@ namespace CodingTracker.mxrt0
 
         private void UpdateRecord()
         {
-            AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease enter the ID of the record you wish to update. Type 0 to return to main menu.\n[/][/]");
+            AnsiConsole.MarkupLine(EnterIdMessage);
 
             string? idInput = Console.ReadLine();
 
@@ -121,8 +122,7 @@ namespace CodingTracker.mxrt0
 
             while (codingSession.Id == 0)
             {
-                AnsiConsole.MarkupLine($"[red][italic]\nRecord with ID [red bold]{id} does not exist.[/][/][/]");
-                AnsiConsole.MarkupLine("[yellow bold]\nPlease enter a valid record ID or [magenta2]type 0 to return to Main Menu:\n[/][/]");
+                Validation.InvalidId(id); ;
 
                 idInput = Console.ReadLine();
 
@@ -168,7 +168,7 @@ namespace CodingTracker.mxrt0
 
         private void DeleteRecord()
         {
-            AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease enter the ID of the record you wish to delete. Type 0 to return to main menu.\n[/][/]");
+            AnsiConsole.MarkupLine(EnterIdMessage);
 
             string? idInput = Console.ReadLine();
 
@@ -183,8 +183,7 @@ namespace CodingTracker.mxrt0
 
             while (codingSession.Id == 0)
             {
-                AnsiConsole.MarkupLine($"[red][italic]\nRecord with ID [red bold]{id} does not exist.[/][/][/]");
-                AnsiConsole.MarkupLine("[yellow bold]\nPlease enter a valid record ID or [magenta2]type 0 to return to Main Menu:\n[/][/]");
+                Validation.InvalidId(id);
 
                 idInput = Console.ReadLine();
 
@@ -216,7 +215,7 @@ namespace CodingTracker.mxrt0
         private string GetDateInput()
         {
             AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease enter the date: (Format: dd-MM-yyyy). Type 0 to return to main menu.\n[/][/]");
-            var userDateInput = Console.ReadLine();
+            string? userDateInput = Console.ReadLine();
 
             if (userDateInput == "0")
             {
@@ -230,7 +229,7 @@ namespace CodingTracker.mxrt0
         {
             AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease enter the start time: (Format: hh:mm). Type 0 to return to main menu.\n[/][/]");
 
-            var startTimeInput = Console.ReadLine();
+            string? startTimeInput = Console.ReadLine();
 
             if (startTimeInput == "0")
             {
@@ -244,7 +243,7 @@ namespace CodingTracker.mxrt0
         {
             AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease enter the end time: (Format: hh:mm). Type 0 to return to main menu.\n[/][/]");
 
-            var endTimeInput = Console.ReadLine();
+            string? endTimeInput = Console.ReadLine();
 
             if (endTimeInput == "0")
             {
