@@ -1,6 +1,7 @@
 ﻿using Spectre.Console;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Globalization;
 using System.Linq;
@@ -16,6 +17,7 @@ namespace CodingTracker.mxrt0
         private readonly MyCodingTrackerDatabase _db;
         private readonly string InvalidCommandMessage = "[italic][red]\nInvalid command. [yellow bold]Please enter a [italic]number [italic][red]from 0-5!\n[/][/][/][/][/][/]";
         private readonly string EnterIdMessage = "[magenta2][slowblink]\nPlease enter the ID of the record you wish to view. Type 0 to return to main menu.\n[/][/]";
+        private long timeTracker;
         public UserInput(MyCodingTrackerDatabase codingController)
         {
             _db = codingController;
@@ -206,10 +208,19 @@ namespace CodingTracker.mxrt0
             string date = GetDateInput();
 
             string startTime = GetStartTimeInput();
-            string endTime = GetEndTimeInput();
+            if (startTime == "Track time")
+            {
+                (string Start, string End) times = TrackTime();
+                string duration = CalculateDuration(ref times.Start, ref times.End);
+                _db.InsertNewRecord(new CodingSession(date, times.Start, times.End, duration));
+            }
+            else
+            {
+                string endTime = GetEndTimeInput();
+                string duration = CalculateDuration(ref startTime, ref endTime);
+                _db.InsertNewRecord(new CodingSession(date, startTime, endTime, duration));
+            }       
 
-            string duration = CalculateDuration(ref startTime, ref endTime);
-            _db.InsertNewRecord(new CodingSession(date, startTime, endTime, duration)); 
         }
 
         private string GetDateInput()
@@ -227,7 +238,7 @@ namespace CodingTracker.mxrt0
 
         private string GetStartTimeInput()
         {
-            AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease enter the start time: (Format: hh:mm). Type 0 to return to main menu.\n[/][/]");
+            AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease enter the start time (Format: hh:mm) or type 1 to track from current time. Type 0 to return to main menu.\n[/][/]");
 
             string? startTimeInput = Console.ReadLine();
 
@@ -236,11 +247,46 @@ namespace CodingTracker.mxrt0
                 MainMenu();
             }
 
+            if (startTimeInput == "1")
+            {
+                return "Track time";
+            }
+
             return Validation.ValidateTime(startTimeInput);
         }
 
-        private string GetEndTimeInput()
+        private (string startTime, string endTime) TrackTime()
         {
+            var startTime = DateTime.Now.ToString("hh\\:mm");
+            AnsiConsole.MarkupLine($"[magenta2][slowblink]\nTime tracking has started. Type 0 to abandon and return to Main Menu or type 1 to end current coding session:\n[/][/]");
+
+            var input = Console.ReadLine();
+
+            if (input == "0")
+            {
+                MainMenu();   
+            }
+           
+            var endTime = DateTime.Now.ToString("hh\\:mm");
+
+            return (startTime, endTime);
+    
+        }
+
+        private string GetEndTimeInput(bool tracking = false)
+        {
+            if (tracking)
+            {
+                var input = Console.ReadLine();
+
+                if (input == "0")
+                {
+                    MainMenu();
+                }
+
+                return DateTime.Now.ToString("hh\\:mm"); 
+            }
+
             AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease enter the end time: (Format: hh:mm). Type 0 to return to main menu.\n[/][/]");
 
             string? endTimeInput = Console.ReadLine();
@@ -254,9 +300,10 @@ namespace CodingTracker.mxrt0
         }
         private string CalculateDuration(ref string startTime, ref string endTime)
         {
-            var end = TimeSpan.ParseExact(endTime, "h\\:mm", CultureInfo.InvariantCulture);
+            
             var start = TimeSpan.ParseExact(startTime, "h\\:mm", CultureInfo.InvariantCulture);
-
+            var end = TimeSpan.ParseExact(endTime, "h\\:mm", CultureInfo.InvariantCulture);
+       
             while (end < start)
             {
                 AnsiConsole.MarkupLine("[red][italic]\nInvalid time range. End time must be after start time.\n[/][/]");

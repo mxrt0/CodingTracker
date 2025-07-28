@@ -52,6 +52,7 @@ namespace CodingTracker.mxrt0
                     break;
                 }
             }
+            
             return timeInput;
         }
 
