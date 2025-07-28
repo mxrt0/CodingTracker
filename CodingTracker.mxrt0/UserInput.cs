@@ -25,7 +25,7 @@ namespace CodingTracker.mxrt0
             while (!closeApp)
             {
                 AnsiConsole.MarkupLine($"[magenta2 bold][slowblink]\nMAIN MENU\n[/][/]");
-                AnsiConsole.MarkupLine($"[magenta3_1]What would you like to do?[/]");
+                AnsiConsole.MarkupLine($"[magenta3_1]What would you like to do?\n[/]");
                 AnsiConsole.MarkupLine($"[mediumturquoise]Type 0 to [italic][red bold]Close Application[/][/][/]");
                 AnsiConsole.MarkupLine($"[mediumturquoise]Type 1 to [italic][mediumturquoise bold]View [orange3 bold]All [italic][mediumturquoise bold]Records[/][/][/][/][/][/]");
                 AnsiConsole.MarkupLine($"[mediumturquoise]Type 2 to [italic][mediumturquoise bold]View Record[/][/][/]");
@@ -77,26 +77,9 @@ namespace CodingTracker.mxrt0
         {
             AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease enter the ID of the record you wish to view. Type 0 to return to main menu.\n[/][/]");
 
-            string idInput = Console.ReadLine();
+            string? idInput = Console.ReadLine();
 
-            while (!int.TryParse(idInput, out _) || string.IsNullOrWhiteSpace(idInput) || int.Parse(idInput) < 0)
-            {
-                AnsiConsole.MarkupLine("[red][italic]\nInvalid ID! [yellow bold]Please enter a valid record ID or [magenta2]type 0 to return to Main Menu:\n[/][/][/][/]");
-                idInput = Console.ReadLine();
-                if (idInput == "0")
-                {
-                    MainMenu();
-                    break;
-                }
-            }
-
-
-            int id = int.Parse(idInput);
-
-            if (id == 0)
-            {
-                MainMenu();
-            }
+            int id = Validation.ValidateId(idInput);
 
             var codingSession = _db.GetRecordById(id);
 
@@ -107,18 +90,7 @@ namespace CodingTracker.mxrt0
 
                 idInput = Console.ReadLine();
 
-                while (int.TryParse(idInput, out _) || string.IsNullOrWhiteSpace(idInput) || int.Parse(idInput) < 0)
-                {
-                    AnsiConsole.MarkupLine("[red][italic]\nInvalid ID! [yellow bold]Please enter a valid record ID or [magenta2]type 0 to return to Main Menu:\n[/][/][/][/]");
-                    idInput = Console.ReadLine();
-                    if (idInput == "0")
-                    {
-                        MainMenu();
-                        break;
-                    }
-                }
-
-                id = int.Parse(idInput);
+                id = Validation.ValidateId(idInput);
 
                 if (id == 0)
                 {
@@ -129,27 +101,16 @@ namespace CodingTracker.mxrt0
                 codingSession = _db.GetRecordById(id);
             }
 
-            AnsiConsole.MarkupLine($"[magenta2]\n{{ Id: {codingSession.Id}, Date: {codingSession.Date}, Duration: {codingSession.Duration} }}\n[/]");
+            AnsiConsole.MarkupLine($"[magenta2]\n{{ Id: {codingSession.Id}, Date: {codingSession.Date}, Start Time: {codingSession.StartTime}, End Time: {codingSession.EndTime} Duration: {codingSession.Duration} }}\n[/]");
         }
 
         private void UpdateRecord()
         {
             AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease enter the ID of the record you wish to update. Type 0 to return to main menu.\n[/][/]");
 
-            string idInput = Console.ReadLine();
+            string? idInput = Console.ReadLine();
 
-            while (!int.TryParse(idInput, out _) || string.IsNullOrWhiteSpace(idInput) || int.Parse(idInput) < 0)
-            {
-                AnsiConsole.MarkupLine("[red][italic]\nInvalid ID! [yellow bold]Please enter a valid record ID or [magenta2]type 0 to return to Main Menu:\n[/][/][/][/]");
-                idInput = Console.ReadLine();
-                if (idInput == "0")
-                {
-                    MainMenu();
-                    break;
-                }
-            }
-
-            int id = int.Parse(idInput);
+            int id = Validation.ValidateId(idInput);
 
             if (id == 0)
             {
@@ -165,18 +126,7 @@ namespace CodingTracker.mxrt0
 
                 idInput = Console.ReadLine();
 
-                while (int.TryParse(idInput, out _) || string.IsNullOrWhiteSpace(idInput) || int.Parse(idInput) < 0)
-                {
-                    AnsiConsole.MarkupLine("[red][italic]\nInvalid ID! [yellow bold]Please enter a valid record ID or [magenta2]type 0 to return to Main Menu:\n[/][/][/][/]");
-                    idInput = Console.ReadLine();
-                    if (idInput == "0")
-                    {
-                        MainMenu();
-                        break;
-                    }
-                }
-
-                id = int.Parse(idInput);
+                id = Validation.ValidateId(idInput);
 
                 if (id == 0)
                 {
@@ -188,9 +138,13 @@ namespace CodingTracker.mxrt0
             }
 
             var newDate = GetDateInput();
-            var newDuration = GetDurationInput();
 
-            _db.UpdateRecord(id, newDate, newDuration);
+            var newStartTime = GetStartTimeInput();
+            var newEndTime = GetEndTimeInput();
+
+            var newDuration = CalculateDuration(ref newStartTime, ref newEndTime);
+
+            _db.UpdateRecord(id, newDate, newStartTime, newEndTime, newDuration);
 
         }
 
@@ -206,7 +160,7 @@ namespace CodingTracker.mxrt0
             {
                 foreach (var codingSession in allRecords)
                 {
-                    AnsiConsole.MarkupLine($"[magenta2]\n{{ Id: {codingSession.Id}, Date: {codingSession.Date}, Duration: {codingSession.Duration} }}\n[/]");
+                    AnsiConsole.MarkupLine($"[magenta2]\n{{ Id: {codingSession.Id}, Date: {codingSession.Date}, Start Time: {codingSession.StartTime}, End Time: {codingSession.EndTime}, Duration: {codingSession.Duration} }}\n[/]");
                 }
             }
        
@@ -216,20 +170,9 @@ namespace CodingTracker.mxrt0
         {
             AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease enter the ID of the record you wish to delete. Type 0 to return to main menu.\n[/][/]");
 
-            string idInput = Console.ReadLine();
+            string? idInput = Console.ReadLine();
 
-            while (!int.TryParse(idInput, out _) || string.IsNullOrWhiteSpace(idInput) || int.Parse(idInput) < 0)
-            {
-                AnsiConsole.MarkupLine("[red][italic]\nInvalid ID! [yellow bold]Please enter a valid record ID or [magenta2]type 0 to return to Main Menu:\n[/][/][/][/]");
-                idInput = Console.ReadLine();
-                if (idInput == "0")
-                {
-                    MainMenu();
-                    break;
-                }
-            }
-
-            int id = int.Parse(idInput);
+            int id = Validation.ValidateId(idInput);
 
             if (id == 0)
             {
@@ -245,18 +188,7 @@ namespace CodingTracker.mxrt0
 
                 idInput = Console.ReadLine();
 
-                while (int.TryParse(idInput, out _) || string.IsNullOrWhiteSpace(idInput) || int.Parse(idInput) < 0)
-                {
-                    AnsiConsole.MarkupLine("[red][italic]\nInvalid ID! [yellow bold]Please enter a valid record ID or [magenta2]type 0 to return to Main Menu:\n[/][/][/][/]");
-                    idInput = Console.ReadLine();
-                    if (idInput == "0")
-                    {
-                        MainMenu();
-                        break;
-                    }
-                }
-
-                id = int.Parse(idInput);
+                id = Validation.ValidateId(idInput);
 
                 if (id == 0)
                 {
@@ -273,9 +205,12 @@ namespace CodingTracker.mxrt0
         private void AddRecord()
         {
             string date = GetDateInput();
-            string duration = GetDurationInput();
 
-            _db.InsertNewRecord(date, duration);
+            string startTime = GetStartTimeInput();
+            string endTime = GetEndTimeInput();
+
+            string duration = CalculateDuration(ref startTime, ref endTime);
+            _db.InsertNewRecord(new CodingSession(date, startTime, endTime, duration)); 
         }
 
         private string GetDateInput()
@@ -287,46 +222,53 @@ namespace CodingTracker.mxrt0
             {
                 MainMenu();         
             }
-            else
-            {
-                while (!DateTime.TryParseExact(userDateInput, "dd-MM-yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
-                {
-                    AnsiConsole.MarkupLine("[red][italic]\nInvalid date! [yellow bold]Please enter a valid date (Format: dd-MM-yyyy) or [magenta2]type 0 to return to Main Menu:\n[/][/][/][/]");
-                    userDateInput = Console.ReadLine();
-                    if (userDateInput == "0")
-                    {
-                        MainMenu();
-                        break;
-                    }
-                }
-            }
-            return userDateInput;
+
+            return Validation.ValidateDate(userDateInput);
         }
 
-        private string GetDurationInput()
+        private string GetStartTimeInput()
         {
-            AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease enter the duration: (Format: hh:mm). Type 0 to return to main menu.\n[/][/]");
+            AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease enter the start time: (Format: hh:mm). Type 0 to return to main menu.\n[/][/]");
 
-            var userDurationInput = Console.ReadLine();
+            var startTimeInput = Console.ReadLine();
 
-            if (userDurationInput == "0")
+            if (startTimeInput == "0")
             {
                 MainMenu();
             }
-            else
+
+            return Validation.ValidateTime(startTimeInput);
+        }
+
+        private string GetEndTimeInput()
+        {
+            AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease enter the end time: (Format: hh:mm). Type 0 to return to main menu.\n[/][/]");
+
+            var endTimeInput = Console.ReadLine();
+
+            if (endTimeInput == "0")
             {
-                while (!TimeSpan.TryParseExact(userDurationInput, "h\\:mm",CultureInfo.InvariantCulture, out _))
-                {
-                    AnsiConsole.MarkupLine("[red][italic]\n Invalid duration! [yellow bold]Please enter a valid duration (Format: hh:mm) or [magenta2]type 0 to return to Main Menu:\n[/][/][/][/]");
-                    userDurationInput = Console.ReadLine();
-                    if (userDurationInput == "0")
-                    {
-                        MainMenu();
-                        break;
-                    }
-                }   
+                MainMenu();
             }
-            return userDurationInput;
+
+            return Validation.ValidateTime(endTimeInput);
+        }
+        private string CalculateDuration(ref string startTime, ref string endTime)
+        {
+            var end = TimeSpan.ParseExact(endTime, "h\\:mm", CultureInfo.InvariantCulture);
+            var start = TimeSpan.ParseExact(startTime, "h\\:mm", CultureInfo.InvariantCulture);
+
+            while (end < start)
+            {
+                AnsiConsole.MarkupLine("[red][italic]\nInvalid time range. End time must be after start time.\n[/][/]");
+                startTime = GetStartTimeInput();
+                endTime = GetEndTimeInput();
+                end = TimeSpan.ParseExact(endTime, "h\\:mm", CultureInfo.InvariantCulture);
+                start = TimeSpan.ParseExact(startTime, "h\\:mm", CultureInfo.InvariantCulture);
+            }
+
+            TimeSpan duration = end - start;
+            return duration.ToString("hh\\:mm");
         }
     }
 }

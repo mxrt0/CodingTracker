@@ -58,6 +58,8 @@ namespace CodingTracker.mxrt0
                             CREATE TABLE IF NOT EXISTS codingTracker (
                                 Id INTEGER PRIMARY KEY,
                                 Date TEXT NOT NULL,
+                                StartTime TEXT NOT NULL,
+                                EndTime TEXT NOT NULL,
                                 Duration TEXT
                             )";
                     connection.Execute(createTableCommand);
@@ -81,7 +83,7 @@ namespace CodingTracker.mxrt0
             }
         }
 
-        public void InsertNewRecord(string date, string duration)
+        public void InsertNewRecord(CodingSession cs)
         {
             string connectionString = GetConnectionString();
             using (var connection = new SqliteConnection(connectionString))
@@ -89,9 +91,9 @@ namespace CodingTracker.mxrt0
                 connection.Open();
 
                 var insertCommand = @"
-                            INSERT INTO codingTracker (Date, Duration) VALUES (@Date, @Duration)";
+                            INSERT INTO codingTracker (Date, StartTime, EndTime, Duration) VALUES (@Date, @StartTime, @EndTime, @Duration)";
 
-                connection.Execute(insertCommand, new { Date = date, Duration = duration });
+                connection.Execute(insertCommand, new { Date = cs.Date, StartTime = cs.StartTime, EndTime = cs.EndTime, Duration = cs.Duration });
 
                 AnsiConsole.MarkupLine("[green1 bold]\nSuccessfully inserted new record!\n[/]");
             }
@@ -108,19 +110,10 @@ namespace CodingTracker.mxrt0
                 var deleteCommand = @"
                             DELETE FROM codingTracker WHERE Id = @Id";
 
-                var affectedRows = connection.Execute(deleteCommand, new { Id = id });
+                connection.Execute(deleteCommand, new { Id = id });
 
-                if (affectedRows > 0)
-                {
-                    AnsiConsole.MarkupLine($"[green1 bold]\nSuccessfully deleted record!\n[/]");
-                }
-                else
-                {
-                    AnsiConsole.MarkupLine($"[red bold]\nNo matching record found in the database!\n[/]");
-                }
-                    
-            }
-            
+                AnsiConsole.MarkupLine($"[green1 bold]\nSuccessfully deleted record with ID {id}!\n[/]");
+            }    
         }
         
         public CodingSession GetRecordById(int id)
@@ -131,7 +124,7 @@ namespace CodingTracker.mxrt0
                 connection.Open();
 
                 var getByIdCommand = @"
-                            SELECT Id, Date, Duration FROM codingTracker WHERE Id = @Id";
+                            SELECT Id, Date, StartTime, EndTime, Duration FROM codingTracker WHERE Id = @Id";
 
                 var codingSession = connection.QueryFirstOrDefault<CodingSession>(getByIdCommand, new { Id = id });
 
@@ -141,7 +134,7 @@ namespace CodingTracker.mxrt0
             }
         }
 
-        public void UpdateRecord(int id, string newDate, string newDuration)
+        public void UpdateRecord(int id, string newDate, string newStartTime, string newEndTime, string newDuration)
         {
             string connectionString = GetConnectionString();
             using (var connection = new SqliteConnection(connectionString))
@@ -149,9 +142,9 @@ namespace CodingTracker.mxrt0
                 connection.Open();
 
                 var updateCommand = @"
-                            UPDATE codingTracker SET Date = @Date, Duration = @Duration WHERE Id = @Id";
+                            UPDATE codingTracker SET Date = @Date, StartTime = @StartTime, EndTime = @EndTime, Duration = @Duration WHERE Id = @Id";
 
-                connection.Execute(updateCommand, new { Date = newDate, Duration = newDuration, Id = id });
+                connection.Execute(updateCommand, new { Date = newDate, StartTime = newStartTime, EndTime = newEndTime, Duration = newDuration, Id = id });
 
                 AnsiConsole.MarkupLine($"[green1 bold]\nSuccessfully updated record with ID {id}!\n[/]");
             }
