@@ -38,6 +38,7 @@ namespace CodingTracker.mxrt0
                 AnsiConsole.MarkupLine($"[mediumturquoise]Type 4 to [italic][yellow2 bold]Add New [italic][mediumturquoise bold]Record[/][/][/][/][/]");
                 AnsiConsole.MarkupLine($"[mediumturquoise]Type 5 to [italic][red bold]Delete [italic][mediumturquoise bold]Record[/][/][/][/][/]");
                 AnsiConsole.MarkupLine($"[mediumturquoise]Type 6 to [italic][chartreuse2 bold]Update [italic][mediumturquoise bold]Record\n[/][/][/][/][/]");
+                AnsiConsole.MarkupLine($"[mediumturquoise]Type 7 to [italic][yellow bold]View Session Report[/][/][/]");
 
                 string? userInput = Console.ReadLine();
 
@@ -76,17 +77,24 @@ namespace CodingTracker.mxrt0
                 case "6":
                     UpdateRecord();
                     break;
+                case "7":
+                    ShowReport();
+                    break;
                 default:
                     AnsiConsole.MarkupLine(InvalidCommandMessage);
                     break;
             }
         }
 
-        private void Filter()
+        private void ShowReport()
         {
-            List<CodingSession> allRecords = _db.GetAllRecords();
             AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease select filter type: (days/weeks/years). Type 0 to return to main menu.\n[/][/]");
-            string filterType = Console.ReadLine();
+            string? filterInput = Console.ReadLine();
+            string filterType = Validation.ValidateFilter(filterInput);
+
+            List<CodingSession> allRecords = _db.GetAllRecords();
+
+            TimeSpan totalCodingTime, averageCodingTime;
             List<CodingSession> filteredRecords;
             switch (filterType)
             {
@@ -95,10 +103,23 @@ namespace CodingTracker.mxrt0
                     string? startDateInput = Console.ReadLine();
                     DateTime startDate = DateTime.ParseExact(Validation.ValidateDate(startDateInput), "dd-MM-yyyy", CultureInfo.InvariantCulture);
 
-                    AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease select end date: (Format: dd-MM-yyyy) or type 1 to only filter by previous date: \n[/][/]");
+                    AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease select end" +
+                        $" date: (Format: dd-MM-yyyy) or type 1 to only filter by previous date: \n[/][/]");
                     string? endDateInput = Console.ReadLine();
-                    DateTime endDate = (endDateInput == "1") ? startDate 
+                    DateTime endDate = (endDateInput == "1") ? startDate
                         : DateTime.ParseExact(Validation.ValidateDate(endDateInput), "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
+                    while (startDate > endDate)
+                    {
+                        AnsiConsole.MarkupLine($"[red][italic]\nEnd date cannot be less than starting date. [yellow bold]Enter valid end date (Format: dd-MM-yyyy) or type 0 to return to Main Menu: \n[/][/][/]");
+                        endDateInput = Console.ReadLine();
+
+                        endDate = DateTime.ParseExact(Validation.ValidateDate(endDateInput), "dd-MM-yyyy", CultureInfo.InvariantCulture);
+                        if (endDateInput == "0")
+                        {
+                            MainMenu();
+                        }
+                    }
 
                     filteredRecords = allRecords.Where(r =>
                     {
@@ -106,20 +127,195 @@ namespace CodingTracker.mxrt0
                         return recordDate >= startDate && recordDate <= endDate;
                     }).ToList();
 
-                    Table table = new Table();
-                    foreach (var property in typeof(CodingSession).GetProperties())
-                    {
-                        table.AddColumn(property.Name.ToString(), c => c.Centered());
-                    }
-                    foreach (var codingSession in filteredRecords)
-                    {
-                        table.AddRow(new string[] { codingSession.Id.ToString(), codingSession.Date, codingSession.StartTime, codingSession.EndTime, codingSession.Duration });
-                    }
-                    table.Border(TableBorder.Rounded);
-                    table.ShowRowSeparators();
-                    AnsiConsole.Write(table);
                     break;
 
+                case "weeks":
+                    AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease select the starting date: (Format: dd-MM-yyyy): \n[/][/]");
+                    string? startOfWeekInput = Console.ReadLine();
+                    DateTime startOfWeek = DateTime.ParseExact(Validation.ValidateDate(startOfWeekInput), "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
+                    AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease select number of weeks (1-...) : \n[/][/]");
+                    string? weeksInput = Console.ReadLine();
+                    while (!int.TryParse(weeksInput, out _) || int.Parse(weeksInput) < 1)
+                    {
+                        AnsiConsole.MarkupLine($"[red][italic]\nInvalid weeks. [yellow bold]Please enter an integer greater than 0 : \n[/][/][/]");
+                        weeksInput = Console.ReadLine();
+                    }
+                    DateTime endDateWeeks = startOfWeek.AddDays(double.Parse(weeksInput) * 7);
+
+                    filteredRecords = allRecords.Where(r =>
+                    {
+                        DateTime recordDate = DateTime.ParseExact(r.Date, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+                        return recordDate >= startOfWeek && recordDate <= endDateWeeks;
+                    }).ToList();
+  
+                    break;
+
+                case "years":
+                    AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease select starting year or type 0 to return to Main Menu: \n[/][/]");
+                    string? startYearInput = Console.ReadLine();
+
+                    int startYear = Validation.ValidateYear(startYearInput);
+                    if (startYear == 0)
+                    {
+                        MainMenu();
+                    }
+
+                    AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease select end year : \n[/][/]");
+                    string? endYearInput = Console.ReadLine();
+
+                    int endYear = Validation.ValidateYear(endYearInput);
+                    if (endYear == 0)
+                    {
+                        MainMenu();
+                    }
+
+                    while (startYear > endYear)
+                    {
+                        AnsiConsole.MarkupLine($"[red][italic]\nEnd year cannot be less than starting year. [yellow bold]Enter valid end year or type 0 to return to Main Menu: \n[/][/][/]");
+                        endYearInput = Console.ReadLine();
+                        endYear = Validation.ValidateYear(endYearInput);
+
+                        if (endYear == 0)
+                        {
+                            MainMenu();
+                        }
+                    }
+
+                    filteredRecords = allRecords.Where(r =>
+                    {
+                        DateTime recordDate = DateTime.ParseExact(r.Date, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+                        return recordDate.Year >= startYear && recordDate.Year <= endYear;
+                    }).ToList();
+ 
+                    break;
+                default:
+                    filteredRecords = Enumerable.Empty<CodingSession>().ToList();
+                    AnsiConsole.MarkupLine("[green bold]\nNo matching records found.\n[/]");
+                    return;
+            }
+
+            totalCodingTime = filteredRecords.Select(r => TimeSpan.ParseExact(r.Duration, "hh\\:mm", CultureInfo.InvariantCulture))
+                        .Aggregate((accumulator, duration) => accumulator + duration);
+
+            averageCodingTime = TimeSpan.FromTicks(totalCodingTime.Ticks / filteredRecords.Count);
+
+            AnsiConsole.MarkupLine($"[green bold]\nTotal coding time: {totalCodingTime.ToString("hh\\:mm")} hours.[/]");
+            AnsiConsole.MarkupLine($"[green bold]Average coding time: {(int)averageCodingTime.TotalHours:D2}:{averageCodingTime.Minutes:D2} hours.\n[/]");
+        }
+
+        private void Filter()
+        {
+            AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease enter order in which to display records by date (ascending/descending) or type 0 to return to main menu: \n[/][/]");
+            string? orderInput = Console.ReadLine();
+            string orderType = Validation.ValidateOrder(orderInput);
+
+            List<CodingSession> allRecords = _db.GetAllRecordsByOrder(orderType);
+
+            AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease select filter type: (days/weeks/years). Type 0 to return to main menu.\n[/][/]");
+            string? filterInput = Console.ReadLine();
+            string filterType = Validation.ValidateFilter(filterInput);
+
+            List<CodingSession> filteredRecords;
+            switch (filterType)
+            {
+                case "days":
+                    AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease select starting date: (Format: dd-MM-yyyy): \n[/][/]");
+                    string? startDateInput = Console.ReadLine();
+                    DateTime startDate = DateTime.ParseExact(Validation.ValidateDate(startDateInput), "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
+                    AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease select end" +
+                        $" date: (Format: dd-MM-yyyy) or type 1 to only filter by previous date: \n[/][/]");
+                    string? endDateInput = Console.ReadLine();
+                    DateTime endDate = (endDateInput == "1") ? startDate 
+                        : DateTime.ParseExact(Validation.ValidateDate(endDateInput), "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
+                    while (startDate > endDate)
+                    {
+                        AnsiConsole.MarkupLine($"[red][italic]\nEnd date cannot be less than starting date. [yellow bold]Enter valid end date (Format: dd-MM-yyyy) or type 0 to return to Main Menu: \n[/][/][/]");
+                        endDateInput = Console.ReadLine();
+                        
+                        endDate = DateTime.ParseExact(Validation.ValidateDate(endDateInput), "dd-MM-yyyy", CultureInfo.InvariantCulture);
+                        if (endDateInput == "0")
+                        {
+                            MainMenu();
+                        }
+                    }
+
+                    filteredRecords = allRecords.Where(r =>
+                    {
+                        DateTime recordDate = DateTime.ParseExact(r.Date, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+                        return recordDate >= startDate && recordDate <= endDate;
+                    }).ToList();
+
+                    DisplayTable(filteredRecords.ToArray());
+                    break;
+
+                case "weeks":
+                    AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease select the starting date: (Format: dd-MM-yyyy): \n[/][/]");
+                    string? startOfWeekInput = Console.ReadLine();
+                    DateTime startOfWeek = DateTime.ParseExact(Validation.ValidateDate(startOfWeekInput), "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
+                    AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease select number of weeks (1-...) : \n[/][/]");
+                    string? weeksInput = Console.ReadLine();
+                    while (!int.TryParse(weeksInput, out _) || int.Parse(weeksInput) < 1)
+                    {
+                        AnsiConsole.MarkupLine($"[red][italic]\nInvalid weeks. [yellow bold]Please enter an integer greater than 0 : \n[/][/][/]");
+                        weeksInput = Console.ReadLine();
+                    }
+                    DateTime endDateWeeks = startOfWeek.AddDays(double.Parse(weeksInput) * 7);
+
+                    filteredRecords = allRecords.Where(r =>
+                    {
+                        DateTime recordDate = DateTime.ParseExact(r.Date, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+                        return recordDate >= startOfWeek && recordDate <= endDateWeeks;
+                    }).ToList();
+
+                    DisplayTable(filteredRecords.ToArray());
+                    break;
+
+                case "years":
+                    AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease select starting year or type 0 to return to Main Menu: \n[/][/]");
+                    string? startYearInput = Console.ReadLine();
+                    
+                    int startYear = Validation.ValidateYear(startYearInput);
+                    if (startYear == 0)
+                    {
+                        MainMenu();
+                    }
+
+                    AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease select end year : \n[/][/]");
+                    string? endYearInput = Console.ReadLine();
+
+                    int endYear = Validation.ValidateYear(endYearInput);
+                    if (endYear == 0)
+                    {
+                        MainMenu();
+                    }
+
+                    while (startYear > endYear)
+                    {
+                        AnsiConsole.MarkupLine($"[red][italic]\nEnd year cannot be less than starting year. [yellow bold]Enter valid end year or type 0 to return to Main Menu: \n[/][/][/]");
+                        endYearInput = Console.ReadLine();
+                        endYear = Validation.ValidateYear(endYearInput);
+
+                        if (endYear == 0)
+                        {
+                            MainMenu();
+                        }
+                    }
+
+                    filteredRecords = allRecords.Where(r =>
+                    {
+                        DateTime recordDate = DateTime.ParseExact(r.Date, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+                        return recordDate.Year >= startYear && recordDate.Year <= endYear;
+                    }).ToList();
+
+                    DisplayTable(filteredRecords.ToArray());
+                    break;
+
+                default:
+                    break;
             }
             
         }
@@ -135,7 +331,7 @@ namespace CodingTracker.mxrt0
 
             while (codingSession.Id == 0)
             {
-                Validation.InvalidId(id);
+                Validation.DisplayInvalidId(id);
 
                 idInput = Console.ReadLine();
 
@@ -149,13 +345,7 @@ namespace CodingTracker.mxrt0
 
                 codingSession = _db.GetRecordById(id);
             }
-            Table singleItemTable = new Table();
-            foreach (var property in codingSession.GetType().GetProperties())
-            {
-                singleItemTable.AddColumn(property.Name.ToString(), c => c.Centered());
-            }
-            singleItemTable.AddRow(new string[] { codingSession.Id.ToString(), codingSession.Date, codingSession.StartTime, codingSession.EndTime, codingSession.Duration });
-            AnsiConsole.Write(singleItemTable); 
+            DisplayTable(codingSession);
         }
 
         private void UpdateRecord()
@@ -175,7 +365,7 @@ namespace CodingTracker.mxrt0
 
             while (codingSession.Id == 0)
             {
-                Validation.InvalidId(id); ;
+                Validation.DisplayInvalidId(id); ;
 
                 idInput = Console.ReadLine();
 
@@ -203,7 +393,11 @@ namespace CodingTracker.mxrt0
 
         private void GetAll()
         {
-            List<CodingSession> allRecords = _db.GetAllRecords();
+            AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease enter order in which to display records by date (ascending/descending) or type 0 to return to main menu: \n[/][/]");
+            string? orderInput = Console.ReadLine();
+            string orderType = Validation.ValidateOrder(orderInput);
+
+            List<CodingSession> allRecords = _db.GetAllRecordsByOrder(orderType);
 
             if (allRecords.Count == 0)
             {
@@ -243,7 +437,7 @@ namespace CodingTracker.mxrt0
 
             while (codingSession.Id == 0)
             {
-                Validation.InvalidId(id);
+                Validation.DisplayInvalidId(id);
 
                 idInput = Console.ReadLine();
 
@@ -373,6 +567,27 @@ namespace CodingTracker.mxrt0
 
             TimeSpan duration = end - start;
             return duration.ToString("hh\\:mm");
+        }
+
+        private void DisplayTable(params CodingSession[] records)
+        {
+            if (!records.Any())
+            {
+                AnsiConsole.MarkupLine("[green bold]\nNo matching records found.\n[/]");
+                return;
+            }
+            Table table = new Table();
+            foreach (var property in typeof(CodingSession).GetProperties())
+            {
+                table.AddColumn(property.Name.ToString(), c => c.Centered());
+            }
+            foreach (var codingSession in records)
+            {
+                table.AddRow(new string[] { codingSession.Id.ToString(), codingSession.Date, codingSession.StartTime, codingSession.EndTime, codingSession.Duration });
+            }
+            table.Border(TableBorder.Rounded);
+            table.ShowRowSeparators();
+            AnsiConsole.Write(table);
         }
     }
 }

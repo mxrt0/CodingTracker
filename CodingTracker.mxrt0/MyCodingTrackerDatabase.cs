@@ -67,6 +67,22 @@ namespace CodingTracker.mxrt0
             }
         }
 
+        public List<CodingSession> GetAllRecordsByOrder(string orderType)
+        {
+            string connectionString = GetConnectionString();
+            using (var connection = new SqliteConnection(connectionString))
+            {
+                connection.Open();
+
+                var getAllCommand = @"
+                            SELECT * FROM codingTracker ";
+
+                var allRecords = connection.Query<CodingSession>(getAllCommand);
+
+                return (orderType == "ascending") ? allRecords.OrderBy(r => DateTime.Parse(r.Date)).ToList() : allRecords.OrderByDescending(r => DateTime.Parse(r.Date)).ToList();
+            }
+        }
+
         public List<CodingSession> GetAllRecords()
         {
             string connectionString = GetConnectionString();
@@ -75,7 +91,7 @@ namespace CodingTracker.mxrt0
                 connection.Open();
 
                 var getAllCommand = @"
-                            SELECT * FROM codingTracker";
+                            SELECT * FROM codingTracker ";
 
                 var allRecords = connection.Query<CodingSession>(getAllCommand);
 

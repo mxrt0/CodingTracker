@@ -52,11 +52,53 @@ namespace CodingTracker.mxrt0
                     break;
                 }
             }
-            
             return timeInput;
         }
 
-        public static void InvalidId(int id) 
+        public static int ValidateYear(string? yearInput = "")
+        {
+            while (!int.TryParse(yearInput, out _) || int.Parse(yearInput) < 1)
+            {
+                AnsiConsole.MarkupLine($"[red][italic]\nInvalid year. [yellow bold]Please enter an integer greater than 0 or type 0 to return to Main Menu: \n[/][/][/]");
+                yearInput = Console.ReadLine();
+                if (yearInput == "0")
+                {
+                    return 0;
+                }
+            }
+            return int.Parse(yearInput);
+        }
+
+        public static string ValidateFilter(string? filterInput = "")
+        {
+            while (!string.Equals(filterInput, "days", StringComparison.OrdinalIgnoreCase) && 
+                !string.Equals(filterInput, "weeks", StringComparison.OrdinalIgnoreCase) && !string.Equals(filterInput, "years", StringComparison.OrdinalIgnoreCase))
+            {
+                AnsiConsole.MarkupLine($"[red][italic]\nInvalid filter type. [yellow bold]Please enter a valid filter (days/weeks/years) or type 0 to return to Main Menu: \n[/][/][/]");
+                filterInput = Console.ReadLine();
+                if (filterInput == "0")
+                {
+                    break;
+                }
+            }
+            return filterInput;
+        }
+
+        public static string ValidateOrder(string? orderInput = "")
+        {
+            while (!string.Equals(orderInput, "ascending", StringComparison.OrdinalIgnoreCase) 
+                    && !string.Equals(orderInput, "descending", StringComparison.OrdinalIgnoreCase))
+            {
+                AnsiConsole.MarkupLine($"[red][italic]\nInvalid order type. [yellow bold]Please enter a valid order type (ascending/descending) or type 0 to return to Main Menu: \n[/][/][/]");
+                orderInput = Console.ReadLine();
+                if (orderInput == "0")
+                {
+                    break;
+                }
+            }
+            return orderInput;
+        }
+        public static void DisplayInvalidId(int id) 
         {
             AnsiConsole.MarkupLine($"[red][italic]\nRecord with ID [red bold]{id} does not exist.[/][/][/]");
             AnsiConsole.MarkupLine("[yellow bold]\nPlease enter a valid record ID or [magenta2]type 0 to return to Main Menu:\n[/][/]");
