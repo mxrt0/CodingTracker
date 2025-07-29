@@ -11,17 +11,20 @@ using System.Threading.Tasks;
 using System.Reflection;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
+
 namespace CodingTracker.mxrt0
 {
     public class UserInput
     {
         private readonly MyCodingTrackerDatabase _db;
-        private readonly string InvalidCommandMessage = "[italic][red]\nInvalid command. [yellow bold]Please enter a [italic]number [italic][red]from 0-5!\n[/][/][/][/][/][/]";
+        private readonly string InvalidCommandMessage = "[italic][red]\nInvalid command. [yellow bold]Please enter a [italic]number [italic][red]from 0-11!\n[/][/][/][/][/][/]";
         private readonly string EnterIdMessage = "[magenta2][slowblink]\nPlease enter the ID of the record you wish to view. Type 0 to return to main menu.\n[/][/]";
+        private readonly GoalManager _goalManager;
 
         public UserInput(MyCodingTrackerDatabase codingController)
         {
             _db = codingController;
+            _goalManager = new GoalManager();
         }
 
         public void MainMenu()
@@ -32,32 +35,37 @@ namespace CodingTracker.mxrt0
                 AnsiConsole.MarkupLine($"[magenta2 bold][slowblink]\nMAIN MENU\n[/][/]");
                 AnsiConsole.MarkupLine($"[magenta3_1]What would you like to do?\n[/]");
                 AnsiConsole.MarkupLine($"[mediumturquoise]Type 0 to [italic][red bold]Close Application[/][/][/]");
-                AnsiConsole.MarkupLine($"[mediumturquoise]Type 1 to [italic][mediumturquoise bold]View [orange3 bold]All [italic][mediumturquoise bold]Records[/][/][/][/][/][/]");
-                AnsiConsole.MarkupLine($"[mediumturquoise]Type 2 to [italic][yellow bold]Filter [italic][mediumturquoise bold]Records[/][/][/][/][/]");
+                AnsiConsole.MarkupLine($"[mediumturquoise]Type 1 to [italic][orange3 bold]View All Records[/][/][/]");
+                AnsiConsole.MarkupLine($"[mediumturquoise]Type 2 to [italic][yellow bold]Filter Records[/][/][/]");
                 AnsiConsole.MarkupLine($"[mediumturquoise]Type 3 to [italic][mediumturquoise bold]View Record[/][/][/]");
-                AnsiConsole.MarkupLine($"[mediumturquoise]Type 4 to [italic][yellow2 bold]Add New [italic][mediumturquoise bold]Record[/][/][/][/][/]");
-                AnsiConsole.MarkupLine($"[mediumturquoise]Type 5 to [italic][red bold]Delete [italic][mediumturquoise bold]Record[/][/][/][/][/]");
-                AnsiConsole.MarkupLine($"[mediumturquoise]Type 6 to [italic][chartreuse2 bold]Update [italic][mediumturquoise bold]Record\n[/][/][/][/][/]");
-                AnsiConsole.MarkupLine($"[mediumturquoise]Type 7 to [italic][yellow bold]View Session Report[/][/][/]");
+                AnsiConsole.MarkupLine($"[mediumturquoise]Type 4 to [italic][yellow2 bold]Add New Record[/][/][/]");
+                AnsiConsole.MarkupLine($"[mediumturquoise]Type 5 to [italic][red bold]Delete Record[/][/][/]");
+                AnsiConsole.MarkupLine($"[mediumturquoise]Type 6 to [italic][chartreuse2 bold]Update Record[/][/][/]");
+                AnsiConsole.MarkupLine($"[mediumturquoise]Type 7 to [italic][yellow bold]View Report By Period[/][/][/]");
+                AnsiConsole.MarkupLine($"[mediumturquoise]Type 8 to [italic][chartreuse2 bold]Set New Coding Goal[/][/][/]");
+                AnsiConsole.MarkupLine($"[mediumturquoise]Type 9 to [italic][red bold]Delete Coding Goal[/][/][/]");
+                AnsiConsole.MarkupLine($"[mediumturquoise]Type 10 to [italic][magenta bold]Check Coding Goal Progress[/][/][/]");
+                AnsiConsole.MarkupLine($"[mediumturquoise]Type 11 to [italic][yellow bold]Update Coding Goal Progress\n[/][/][/]");
 
                 string? userInput = Console.ReadLine();
 
                 while (string.IsNullOrWhiteSpace(userInput))
                 {
                     AnsiConsole.MarkupLine(InvalidCommandMessage);
-                    userInput = Console.ReadLine();
+                    userInput = Console.ReadLine();   
                 }
-                HandleUserInput(userInput, ref closeApp);
-            }
-            Environment.Exit(0);
+
+                AnsiConsole.Clear();
+                HandleUserInput(userInput);
+            }   
         }
-        public void HandleUserInput(string userInput, ref bool closeApp)
+        public void HandleUserInput(string userInput)
         {
             switch (userInput)
             {
                 case "0":
                     AnsiConsole.MarkupLine("[green1 bold]\nGoodbye!\n[/]");
-                    closeApp = true;
+                    Environment.Exit(0);
                     break;
                 case "1":
                     GetAll();
@@ -80,15 +88,241 @@ namespace CodingTracker.mxrt0
                 case "7":
                     ShowReport();
                     break;
+                case "8":
+                    SetNewGoal();
+                    break;
+                case "9":
+                    DeleteGoal();
+                    break;
+                    case "10":
+                    CheckGoalProgress();
+                    break;
+                case "11":
+                    UpdateGoalProgress();
+                    break;
                 default:
                     AnsiConsole.MarkupLine(InvalidCommandMessage);
                     break;
             }
         }
 
+        private void UpdateGoalProgress()
+        {
+            AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease enter the exact name of your goal. Type 0 to return to main menu.\n[/][/]");
+            string? goalToUpdateName = Console.ReadLine();
+            if (goalToUpdateName == "0")
+            {
+                MainMenu();
+            }
+
+            while (string.IsNullOrEmpty(goalToUpdateName) || !_goalManager.ValidateGoalExists(goalToUpdateName))
+            {
+                AnsiConsole.MarkupLine("[red][italic]\nNo coding goal with this name was found. Try again or type 0 to return to Main Menu: \n[/][/]");
+                goalToUpdateName = Console.ReadLine();
+                if (goalToUpdateName == "0")
+                {
+                    MainMenu();
+                }
+            }
+
+            AnsiConsole.MarkupLine($"[magenta2][slowblink]\nEnter the hours/minutes of coding you have done toward your goal (Format: hh:mm). Type 0 to return to main menu.\n[/][/]");
+            string codingContributionTimeInput = Console.ReadLine();
+            string codingContributionTime = Validation.ValidateTime(codingContributionTimeInput);
+            if (codingContributionTime == "0")
+            {
+                MainMenu();
+            }
+
+            var updatedGoal = _goalManager.UpdateGoal(goalToUpdateName, codingContributionTime);
+            _goalManager.DisplayGoalProgress(updatedGoal.Name);
+
+            if (updatedGoal.IsCompleted)
+            {
+                AnsiConsole.MarkupLine($"[green bold]Congratulations, you have reached goal '{updatedGoal.Name}'![/]");
+                _goalManager.DeleteGoal(updatedGoal.Name);
+            }
+            else
+            {
+                var remainingTime = updatedGoal.TimeTarget - updatedGoal.CompletedTime;
+                AnsiConsole.MarkupLine($"[green bold]Keep coding, you need {remainingTime.ToString("hh\\:mm")} more hour(s)/minute(s) to reach this goal![/]");
+            }    
+      
+        }
+
+        private void CheckGoalProgress()
+        {
+            AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease enter the exact name of your goal. Type 0 to return to main menu.\n[/][/]");
+            string? goalToCheckNameInput = Console.ReadLine();
+            if (goalToCheckNameInput == "0")
+            {
+                MainMenu();
+            }
+
+            while (string.IsNullOrEmpty(goalToCheckNameInput) || !_goalManager.ValidateGoalExists(goalToCheckNameInput))
+            {
+                AnsiConsole.MarkupLine("[red][italic]\nNo coding goal with this name was found. Try again or type 0 to return to Main Menu: \n[/][/]");
+                goalToCheckNameInput = Console.ReadLine();
+                if (goalToCheckNameInput == "0")
+                {
+                    MainMenu();
+                }
+            }
+
+            _goalManager.DisplayGoalProgress(goalToCheckNameInput);
+        }
+
+        private void DeleteGoal()
+        {
+            AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease enter the exact name of your goal. Type 0 to return to main menu.\n[/][/]");
+            string? goalToDeleteNameInput = Console.ReadLine();
+
+            while (string.IsNullOrEmpty(goalToDeleteNameInput) || !_goalManager.ValidateGoalExists(goalToDeleteNameInput))
+            {
+                AnsiConsole.MarkupLine("[red][italic]\nNo coding goal with this name was found. Try again or type 0 to return to Main Menu: \n[/][/]");
+                goalToDeleteNameInput = Console.ReadLine();
+                if (goalToDeleteNameInput == "0")
+                {
+                    MainMenu();
+                }
+            }
+
+            _goalManager.DeleteGoal(goalToDeleteNameInput);
+            AnsiConsole.MarkupLine($"[green bold]\nSuccessfully deleted goal '{goalToDeleteNameInput}'![/]");
+        }
+
+        private void SetNewGoal()
+        {
+            AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease select goal period type: (days/weeks/years). Type 0 to return to main menu.\n[/][/]");
+            string? goalTypeInput = Console.ReadLine();
+            string goalType = Validation.ValidateFilter(goalTypeInput);
+            if (goalType == "0")
+            {
+                MainMenu();
+            }
+
+            AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease enter goal name (must contain 1 or more letter). Type 0 to return to main menu.\n[/][/]");
+            string? goalNameInput = Console.ReadLine();
+            string goalName = Validation.ValidateGoalName(goalNameInput);
+            if (goalName == "0")
+            {
+                MainMenu();
+            }
+
+            while (_goalManager.ValidateGoalExists(goalNameInput))
+            {
+                AnsiConsole.MarkupLine($"[red][italic]Goal with {goalNameInput} already exists. Try again or type 0 to return to Main Menu:\n[/][/]");
+                goalNameInput = Console.ReadLine();
+                goalName = Validation.ValidateGoalName(goalNameInput);
+                if (goalName == "0")
+                {
+                    MainMenu();
+                }
+            }
+
+            DateTime goalStart;
+            DateTime endDate;
+            string? codingTimeInput = "";
+            string? codingTimeString = "";
+            TimeSpan codingTimeTarget;
+
+            AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease enter coding time you are aiming to hit (Format: hh:mm). Type 0 to return to main menu.\n[/][/]");
+            codingTimeInput = Console.ReadLine();
+            codingTimeString = Validation.ValidateTime(codingTimeInput);
+
+            switch (goalType)
+            {
+                case "days":
+                    AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease enter last date to reach your goal: (Format: dd-MM-yyyy). Type 0 to return to main menu.\n[/][/]");
+                    string? endDateInput  = Console.ReadLine();
+                    string endDateString = Validation.ValidateDate(endDateInput);
+                    if (endDateString == "0")
+                    {
+                        MainMenu();
+                    }
+
+                    goalStart = DateTime.Now.Date;
+                    endDate = DateTime.ParseExact(endDateString, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+
+                    while (goalStart > endDate)
+                    {
+                        AnsiConsole.MarkupLine("[red][italic]\nEnd date cannot be a past date. Try again (Format: dd-MM-yyyy) or type 0 to return to Main Menu: \n[/][/]");
+
+                        endDateInput = Console.ReadLine();
+                        endDateString = Validation.ValidateDate(endDateInput);
+                        if (endDateString == "0")
+                        {
+                            MainMenu();
+                        }
+                        endDate = DateTime.ParseExact(endDateString, "dd-MM-yyyy", CultureInfo.InvariantCulture);
+                    }
+                    AnsiConsole.MarkupLine($"[green bold]\nSuccesfully set goal for {(endDate - goalStart).Days} day(s) from now![/]");
+                    break;
+
+                case "weeks":
+                    AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease enter number of weeks to reach your goal. Type 0 to return to main menu.\n[/][/]");
+                    string? weeksInput = Console.ReadLine();
+                    if (weeksInput == "0")
+                    {
+                        MainMenu();
+                    }
+
+                    while (!int.TryParse(weeksInput, out _) || int.Parse(weeksInput) < 1)
+                    {
+                        AnsiConsole.MarkupLine($"[red][italic]\nInvalid number of weeks. [yellow bold]Please enter an integer greater than 0: \n[/][/][/]");
+                        weeksInput = Console.ReadLine();
+                    }
+
+                    if (weeksInput == "0")
+                    {
+                        MainMenu();
+                    }
+
+                    int numberOfWeeks = int.Parse(weeksInput);
+
+                    goalStart = DateTime.Now;
+                    endDate = goalStart.AddDays(numberOfWeeks * 7);
+                    AnsiConsole.MarkupLine($"[green bold]\nSuccesfully set goal for {numberOfWeeks} week(s) from now![/]");
+                    break;
+
+                case "years":
+                    AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease enter number of years to reach your goal. Type 0 to return to main menu.\n[/][/]");
+                    string? yearsInput = Console.ReadLine();
+                    if (yearsInput == "0")
+                    {
+                        MainMenu();
+                    }
+
+                    while (!int.TryParse(yearsInput, out _) || int.Parse(yearsInput) < 1)
+                    {
+                        AnsiConsole.MarkupLine($"[red][italic]\nInvalid number of years. [yellow bold]Please enter an integer greater than 0: \n[/][/][/]");
+                        weeksInput = Console.ReadLine();
+                    }
+
+                    if (yearsInput == "0")
+                    {
+                        MainMenu();
+                    }
+
+                    int numberOfYears = int.Parse(yearsInput);
+
+                    goalStart = DateTime.Now;
+                    endDate = goalStart.AddYears(numberOfYears);
+                    AnsiConsole.MarkupLine($"[green bold]\nSuccesfully set goal for {numberOfYears} year(s) from now![/]");
+                    break;
+
+                default:
+                    endDate = goalStart = DateTime.Now; // won't happen
+                    break;
+
+            }
+
+            codingTimeTarget = TimeSpan.ParseExact(codingTimeString, "hh\\:mm", CultureInfo.CurrentCulture);
+            _goalManager.AddGoal(new CodingGoal(goalName, goalStart, codingTimeTarget, endDate));
+        }
+
         private void ShowReport()
         {
-            AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease select filter type: (days/weeks/years). Type 0 to return to main menu.\n[/][/]");
+            AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease select period type: (days/weeks/years). Type 0 to return to main menu.\n[/][/]");
             string? filterInput = Console.ReadLine();
             string filterType = Validation.ValidateFilter(filterInput);
 
