@@ -97,5 +97,18 @@ namespace CodingTracker.mxrt0
             var serializedGoals = JsonConvert.SerializeObject(_goals, Formatting.Indented);
             File.WriteAllText(_goalsFilePath, serializedGoals);
         }
+
+        public void DeleteAllGoals()
+        {
+            if (File.Exists(_goalsFilePath))
+            {
+                File.Delete(_goalsFilePath);
+                AnsiConsole.MarkupLine("[green bold]\nSuccessfully deleted all goals![/]");
+                LoadGoals();
+                return;
+            }
+
+            AnsiConsole.MarkupLine("[red italic]\nYou have not set any goals yet![/]");
+        }
     }
 }

@@ -17,7 +17,7 @@ namespace CodingTracker.mxrt0
     public class UserInput
     {
         private readonly MyCodingTrackerDatabase _db;
-        private readonly string InvalidCommandMessage = "[italic][red]\nInvalid command. [yellow bold]Please enter a [italic]number [italic][red]from 0-11!\n[/][/][/][/][/][/]";
+        private readonly string InvalidCommandMessage = "[italic][red]\nInvalid command. [yellow bold]Please enter a [italic]number [italic][red]from 0-12!\n[/][/][/][/][/][/]";
         private readonly string EnterIdMessage = "[magenta2][slowblink]\nPlease enter the ID of the record you wish to view. Type 0 to return to main menu.\n[/][/]";
         private readonly GoalManager _goalManager;
 
@@ -45,7 +45,8 @@ namespace CodingTracker.mxrt0
                 AnsiConsole.MarkupLine($"[mediumturquoise]Type 8 to [italic][chartreuse2 bold]Set New Coding Goal[/][/][/]");
                 AnsiConsole.MarkupLine($"[mediumturquoise]Type 9 to [italic][red bold]Delete Coding Goal[/][/][/]");
                 AnsiConsole.MarkupLine($"[mediumturquoise]Type 10 to [italic][magenta bold]Check Coding Goal Progress[/][/][/]");
-                AnsiConsole.MarkupLine($"[mediumturquoise]Type 11 to [italic][yellow bold]Update Coding Goal Progress\n[/][/][/]");
+                AnsiConsole.MarkupLine($"[mediumturquoise]Type 11 to [italic][yellow bold]Update Coding Goal Progress[/][/][/]");
+                AnsiConsole.MarkupLine($"[mediumturquoise]Type 12 to [italic][red bold]Delete All Coding Goals\n[/][/][/]");
 
                 string? userInput = Console.ReadLine();
 
@@ -100,15 +101,34 @@ namespace CodingTracker.mxrt0
                 case "11":
                     UpdateGoalProgress();
                     break;
+                case "12":
+                    DeleteAllGoals();
+                    break;
                 default:
                     AnsiConsole.MarkupLine(InvalidCommandMessage);
                     break;
             }
         }
 
+        private void DeleteAllGoals()
+        {
+            ConfirmationPrompt confirmation = new("[magenta2][slowblink]\nAre you sure you want to permanently delete all your coding goals?\n[/][/]")
+            {
+                DefaultValue = false,
+                InvalidChoiceMessage = "[red][italic]\nPlease enter 'Y' to [underline]Delete All Records[/] or 'N' to return to Main Menu: \n[/][/]"
+            };
+            var deleteAll = confirmation.Show(AnsiConsole.Console);
+            
+            if (deleteAll)
+            {
+                _goalManager.DeleteAllGoals();
+                
+            }
+        }
+
         private void UpdateGoalProgress()
         {
-            AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease enter the exact name of your goal. Type 0 to return to main menu.\n[/][/]");
+            AnsiConsole.MarkupLine("[magenta2][slowblink]\nPlease enter the exact name of your goal. Type 0 to return to main menu.\n[/][/]");
             string? goalToUpdateName = Console.ReadLine();
             if (goalToUpdateName == "0")
             {
@@ -125,7 +145,7 @@ namespace CodingTracker.mxrt0
                 }
             }
 
-            AnsiConsole.MarkupLine($"[magenta2][slowblink]\nEnter the hours/minutes of coding you have done toward your goal (Format: hh:mm). Type 0 to return to main menu.\n[/][/]");
+            AnsiConsole.MarkupLine("[magenta2][slowblink]\nEnter the hours/minutes of coding you have done toward your goal (Format: hh:mm). Type 0 to return to main menu.\n[/][/]");
             string codingContributionTimeInput = Console.ReadLine();
             string codingContributionTime = Validation.ValidateTime(codingContributionTimeInput);
             if (codingContributionTime == "0")
@@ -173,7 +193,7 @@ namespace CodingTracker.mxrt0
 
         private void DeleteGoal()
         {
-            AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease enter the exact name of your goal. Type 0 to return to main menu.\n[/][/]");
+            AnsiConsole.MarkupLine("[magenta2][slowblink]\nPlease enter the exact name of your goal. Type 0 to return to main menu.\n[/][/]");
             string? goalToDeleteNameInput = Console.ReadLine();
 
             while (string.IsNullOrEmpty(goalToDeleteNameInput) || !_goalManager.ValidateGoalExists(goalToDeleteNameInput))
