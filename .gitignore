@@ -363,4 +363,4 @@ MigrationBackup/
 FodyWeavers.xsd
 
 # Database
-CodingTracker.mxrt0\codingTracker.db
+CodingTracker.mxrt0/codingTracker.db
