@@ -154,8 +154,7 @@ namespace CodingTracker.mxrt0
             }
 
             var updatedGoal = _goalManager.UpdateGoal(goalToUpdateName, codingContributionTime);
-            _goalManager.DisplayGoalProgress(updatedGoal.Name);
-
+  
             if (updatedGoal.IsCompleted)
             {
                 AnsiConsole.MarkupLine($"[green bold]Congratulations, you have reached goal '{updatedGoal.Name}'![/]");
@@ -163,8 +162,9 @@ namespace CodingTracker.mxrt0
             }
             else
             {
+                _goalManager.DisplayGoalProgress(updatedGoal.Name);
                 var remainingTime = updatedGoal.TimeTarget - updatedGoal.CompletedTime;
-                AnsiConsole.MarkupLine($"[green bold]Keep coding, you need {remainingTime.ToString("hh\\:mm")} more hour(s)/minute(s) to reach this goal![/]");
+                
             }    
       
         }

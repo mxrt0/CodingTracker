@@ -62,10 +62,14 @@ namespace CodingTracker.mxrt0
 
             if (goalToDisplay is not null)
             {
+                AnsiConsole.WriteLine();
                 Table table = new Table();
                 foreach (var property in typeof(CodingGoal).GetProperties())
                 {
-                    table.AddColumn(property.Name.ToString(), c => c.Centered());
+                    if (property.Name != nameof(CodingGoal.IsCompleted))
+                    {
+                        table.AddColumn(property.Name.ToString(), c => c.Centered());
+                    }   
                 }
 
                 var goalStartDate = goalToDisplay.StartDate.ToString("dd-MM-yyyy");
@@ -73,10 +77,16 @@ namespace CodingTracker.mxrt0
                 var goalDeadline = goalToDisplay.Deadline.ToString("dd-MM-yyyy");
                 var goalCompletedTime = goalToDisplay.CompletedTime.ToString("hh\\:mm");
 
-                table.AddRow(new string[] { goalToDisplay.Name, goalStartDate, goalCompletedTime, goalTimeTarget, goalDeadline, goalToDisplay.IsCompleted.ToString()});
+                table.AddRow(new string[] { goalToDisplay.Name, goalStartDate, goalCompletedTime, goalTimeTarget, goalDeadline});
                 table.Border(TableBorder.Rounded);
                 table.ShowRowSeparators();
                 AnsiConsole.Write(table);
+
+                var remainingTime = goalToDisplay.TimeTarget - goalToDisplay.CompletedTime;
+                AnsiConsole.MarkupLine($"[green bold]\nKeep coding, you need {remainingTime.ToString("hh\\:mm")} more hour(s)/minute(s) to reach this goal![/]");
+
+                var dailyCodingToReachGoal = CalculateDailyCodingTimeToReachGoal(goalToDisplay.CompletedTime, goalToDisplay.TimeTarget, goalToDisplay.Deadline);
+                AnsiConsole.MarkupLine($"[green bold]\nAverage daily coding time to reach goal in time: {dailyCodingToReachGoal.ToString("hh\\:mm")} hour(s)/minute(s).[/]");
             }  
         }
         private void LoadGoals()
@@ -109,6 +119,15 @@ namespace CodingTracker.mxrt0
             }
 
             AnsiConsole.MarkupLine("[red italic]\nYou have not set any goals yet![/]");
+        }
+
+        public TimeSpan CalculateDailyCodingTimeToReachGoal(TimeSpan completedTime, TimeSpan timeTarget, DateTime goalEndDate)
+        {
+            var remainingCodingTime = timeTarget - completedTime;
+
+            int daysUntilEndDate = (goalEndDate - DateTime.Now.Date).Days;
+
+            return remainingCodingTime.Divide(daysUntilEndDate);
         }
     }
 }
