@@ -364,3 +364,6 @@ FodyWeavers.xsd
 
 # Database
 CodingTracker.mxrt0/codingTracker.db
+
+# Goals JSON
+CodingTracker.mxrt0/goals.json
