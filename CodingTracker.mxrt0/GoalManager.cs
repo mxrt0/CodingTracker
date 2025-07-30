@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Spectre.Console;
+using System.Globalization;
 
 namespace CodingTracker.mxrt0
 {
@@ -32,13 +27,13 @@ namespace CodingTracker.mxrt0
         public CodingGoal UpdateGoal(string goalName, string contributionTimeString)
         {
             var goalToUpdate = _goals.Find(g => g.Name == goalName);
-            
+
             if (goalToUpdate is not null)
             {
                 var contributionTime = TimeSpan.ParseExact(contributionTimeString, "hh\\:mm", CultureInfo.InvariantCulture);
                 goalToUpdate.CompletedTime += contributionTime;
 
-                if (CheckGoalReached(goalToUpdate)) 
+                if (CheckGoalReached(goalToUpdate))
                 {
                     goalToUpdate.IsCompleted = true;
                 }
@@ -48,7 +43,21 @@ namespace CodingTracker.mxrt0
             return goalToUpdate;
         }
 
-        public bool ValidateGoalExists(string? goalName = "")
+        public string ValidateGoalWithNameExists(string? goalName = "")
+        {
+            while (string.IsNullOrEmpty(goalName.Trim()) || _goals.Any(g => string.Equals(g.Name, goalName, StringComparison.OrdinalIgnoreCase)))
+            {
+                AnsiConsole.MarkupLine("[red][italic]\nNo coding goal with this name was found. Try again or type 0 to return to Main Menu: \n[/][/]");
+                goalName = Console.ReadLine();
+                if (goalName == "0")
+                {
+                    return goalName;
+                }
+            }
+            return goalName.Trim();
+        }
+
+        public bool CheckGoalExists(string? goalName = "")
         {
             return _goals?.Any(g => string.Equals(g.Name, goalName, StringComparison.OrdinalIgnoreCase)) ?? false;
         }
@@ -69,7 +78,7 @@ namespace CodingTracker.mxrt0
                     if (property.Name != nameof(CodingGoal.IsCompleted))
                     {
                         table.AddColumn(property.Name.ToString(), c => c.Centered());
-                    }   
+                    }
                 }
 
                 var goalStartDate = goalToDisplay.StartDate.ToString("dd-MM-yyyy");
@@ -77,7 +86,7 @@ namespace CodingTracker.mxrt0
                 var goalDeadline = goalToDisplay.Deadline.ToString("dd-MM-yyyy");
                 var goalCompletedTime = goalToDisplay.CompletedTime.ToString("hh\\:mm");
 
-                table.AddRow(new string[] { goalToDisplay.Name, goalStartDate, goalCompletedTime, goalTimeTarget, goalDeadline});
+                table.AddRow(new string[] { goalToDisplay.Name, goalStartDate, goalCompletedTime, goalTimeTarget, goalDeadline });
                 table.Border(TableBorder.Rounded);
                 table.ShowRowSeparators();
                 AnsiConsole.Write(table);
@@ -87,7 +96,7 @@ namespace CodingTracker.mxrt0
 
                 var dailyCodingToReachGoal = CalculateDailyCodingTimeToReachGoal(goalToDisplay.CompletedTime, goalToDisplay.TimeTarget, goalToDisplay.Deadline);
                 AnsiConsole.MarkupLine($"[green bold]\nAverage daily coding time to reach goal in time: {dailyCodingToReachGoal.ToString("hh\\:mm")} hour(s)/minute(s).[/]");
-            }  
+            }
         }
         private void LoadGoals()
         {
@@ -128,6 +137,16 @@ namespace CodingTracker.mxrt0
             int daysUntilEndDate = (goalEndDate - DateTime.Now.Date).Days;
 
             return remainingCodingTime.Divide(daysUntilEndDate);
+        }
+
+        public bool CheckNotEmpty()
+        {
+            if (!_goals.Any())
+            {
+                AnsiConsole.MarkupLine("[red][italic]No goals have been added.[/][/]");
+                return false;
+            }
+            return true;
         }
     }
 }
