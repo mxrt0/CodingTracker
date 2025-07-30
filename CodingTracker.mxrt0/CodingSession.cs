@@ -1,12 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Globalization;
-using Spectre.Console;
-
-namespace CodingTracker.mxrt0
+﻿namespace CodingTracker.mxrt0
 {
     public class CodingSession
     {
@@ -24,7 +16,7 @@ namespace CodingTracker.mxrt0
 
         public int Id { get; set; }
         public string Date { get; set; }
-        public string StartTime { get;set; }
+        public string StartTime { get; set; }
         public string EndTime { get; set; }
         public string Duration { get; set; }
 
