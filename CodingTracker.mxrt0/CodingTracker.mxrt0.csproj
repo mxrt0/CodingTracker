@@ -22,8 +22,4 @@
 	  <None Include="App.config" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Contracts\" />
-  </ItemGroup>
-
 </Project>
