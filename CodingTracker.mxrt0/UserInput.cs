@@ -9,7 +9,7 @@ namespace CodingTracker.mxrt0
     {
         private readonly MyCodingTrackerDatabase _db;
         private readonly string InvalidCommandMessage = "[italic][red]\nInvalid command. [yellow bold]Please enter a [italic]number [italic][red]from 0-14!\n[/][/][/][/][/][/]";
-        private readonly string EnterIdMessage = "[magenta2][slowblink]\nPlease enter the ID of the record you wish to view. Type 0 to return to main menu.\n[/][/]";
+        private readonly string EnterIdMessage = "[magenta2][slowblink]\nPlease enter the ID of the record you wish to view/update. Type 0 to return to main menu.\n[/][/]";
         private readonly GoalManager _goalManager;
 
         public UserInput(MyCodingTrackerDatabase codingController)
