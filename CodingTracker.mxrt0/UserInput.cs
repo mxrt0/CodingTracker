@@ -1,4 +1,5 @@
-﻿using Spectre.Console;
+﻿using CodingTracker.mxrt0.Contracts;
+using Spectre.Console;
 using System.Globalization;
 
 
@@ -98,23 +99,24 @@ namespace CodingTracker.mxrt0
                     UpdateGoalProgress();
                     break;
                 case "13":
-                    ShowAllGoals();
+                    ViewAllGoals();
                     break;
                 case "14":
                     DeleteAllGoals();
                     break;
                 default:
-                    AnsiConsole.MarkupLine(InvalidCommandMessage);
                     break;
             }
         }
 
-        private void ShowAllGoals()
+        private void ViewAllGoals()
         {
             if (!_goalManager.CheckNotEmpty())
             {
                 return;
             }
+            var allGoals = _goalManager.GetAllGoals();
+            DisplayTable(allGoals.ToArray());
         }
 
         private void DeleteAllRecords()
@@ -155,6 +157,7 @@ namespace CodingTracker.mxrt0
             if (deleteAll)
             {
                 _goalManager.DeleteAllGoals();
+                AnsiConsole.MarkupLine("[green bold]\nSuccessfully deleted all goals![/]");
             }
         }
 
@@ -169,13 +172,11 @@ namespace CodingTracker.mxrt0
             string? goalToUpdateNameInput = Console.ReadLine();
             CheckReturnToMainMenu(goalToUpdateNameInput);
 
-            var goalToUpdateName = _goalManager.ValidateGoalWithNameExists(goalToUpdateNameInput);
+            var goalToUpdateName = _goalManager.EnsureGoalNameValid(goalToUpdateNameInput);
             CheckReturnToMainMenu(goalToUpdateName);
 
-            AnsiConsole.MarkupLine("[magenta2][slowblink]\nEnter the hours/minutes of coding you have done toward your goal (Format: hh:mm). Type 0 to return to main menu.\n[/][/]");
+            AnsiConsole.MarkupLine("[magenta2][slowblink]\nEnter the hours/minutes of coding you have done toward your goal (Format: hh:mm).\n[/][/]");
             string codingContributionTimeInput = Console.ReadLine();
-            CheckReturnToMainMenu(codingContributionTimeInput);
-
             string codingContributionTime = Validation.ValidateTime(codingContributionTimeInput);
             CheckReturnToMainMenu(codingContributionTime);
 
@@ -189,8 +190,6 @@ namespace CodingTracker.mxrt0
             else
             {
                 _goalManager.DisplayGoalProgress(updatedGoal.Name);
-                var remainingTime = updatedGoal.TimeTarget - updatedGoal.CompletedTime;
-
             }
         }
 
@@ -205,7 +204,7 @@ namespace CodingTracker.mxrt0
             string? goalToCheckNameInput = Console.ReadLine();
             CheckReturnToMainMenu(goalToCheckNameInput);
 
-            var goalToCheckName = _goalManager.ValidateGoalWithNameExists(goalToCheckNameInput);
+            var goalToCheckName = _goalManager.EnsureGoalNameValid(goalToCheckNameInput);
             CheckReturnToMainMenu(goalToCheckName);
 
             _goalManager.DisplayGoalProgress(goalToCheckName);
@@ -222,11 +221,11 @@ namespace CodingTracker.mxrt0
             string? goalToDeleteNameInput = Console.ReadLine();
             CheckReturnToMainMenu(goalToDeleteNameInput);
 
-            var goalToDeleteName = _goalManager.ValidateGoalWithNameExists(goalToDeleteNameInput);
+            var goalToDeleteName = _goalManager.EnsureGoalNameValid(goalToDeleteNameInput);
             CheckReturnToMainMenu(goalToDeleteName);
 
             _goalManager.DeleteGoal(goalToDeleteName);
-            AnsiConsole.MarkupLine($"[green bold]\nSuccessfully deleted goal '{goalToDeleteNameInput}'![/]");
+            AnsiConsole.MarkupLine($"[green bold]\nSuccessfully deleted goal '{goalToDeleteName}'![/]");
         }
 
         private void SetNewGoal()
@@ -300,14 +299,8 @@ namespace CodingTracker.mxrt0
                     string? weeksInput = Console.ReadLine();
                     CheckReturnToMainMenu(weeksInput);
 
-                    while (!int.TryParse(weeksInput, out _) || int.Parse(weeksInput) < 1)
-                    {
-                        AnsiConsole.MarkupLine($"[red][italic]\nInvalid number of weeks. [yellow bold]Please enter an integer greater than 0 or type 0 to return to Main Menu: \n[/][/][/]");
-                        weeksInput = Console.ReadLine();
-                        CheckReturnToMainMenu(weeksInput);
-                    }
-
-                    int numberOfWeeks = int.Parse(weeksInput);
+                    int numberOfWeeks = Validation.ValidateWeeks(weeksInput);
+                    CheckReturnToMainMenu(numberOfWeeks.ToString());
 
                     goalStart = DateTime.Now;
                     endDate = goalStart.AddDays(numberOfWeeks * 7);
@@ -332,11 +325,9 @@ namespace CodingTracker.mxrt0
                     endDate = goalStart.AddYears(numberOfYears);
                     AnsiConsole.MarkupLine($"[green bold]\nSuccesfully set goal for {numberOfYears} year(s) from now![/]");
                     break;
-
                 default:
                     endDate = goalStart = DateTime.Now; // won't happen
                     break;
-
             }
 
             codingTimeTarget = TimeSpan.ParseExact(codingTimeString, "hh\\:mm", CultureInfo.CurrentCulture);
@@ -485,7 +476,7 @@ namespace CodingTracker.mxrt0
                 return;
             }
 
-            List<CodingSession> allRecords = _db.GetAllRecords();
+            var allRecords = _db.GetAllRecords();
 
             if (allRecords.Count > 1)
             {
@@ -493,22 +484,10 @@ namespace CodingTracker.mxrt0
                 string? orderInput = Console.ReadLine();
                 string orderType = Validation.ValidateOrder(orderInput);
                 CheckReturnToMainMenu(orderType);
+                allRecords = _db.GetAllRecordsByOrder(orderType);
             }
 
-            Table table = new Table();
-            foreach (var property in typeof(CodingSession).GetProperties())
-            {
-                table.AddColumn(property.Name.ToString(), c => c.Centered());
-            }
-
-            foreach (var codingSession in allRecords)
-            {
-                table.AddRow(new string[] { codingSession.Id.ToString(), codingSession.Date, codingSession.StartTime, codingSession.EndTime, codingSession.Duration });
-            }
-
-            table.Border(TableBorder.Rounded);
-            table.ShowRowSeparators();
-            AnsiConsole.Write(table);
+            DisplayTable(allRecords.ToArray());
         }
 
         private void DeleteRecord()
@@ -547,6 +526,7 @@ namespace CodingTracker.mxrt0
         private void AddRecord()
         {
             string date = GetDateInput();
+            CheckReturnToMainMenu(date);
 
             string startTime = GetStartTimeInput();
             if (startTime == "Track time")
@@ -566,10 +546,14 @@ namespace CodingTracker.mxrt0
 
         private string GetDateInput()
         {
-            AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease enter the date: (Format: dd-MM-yyyy). Type 0 to return to main menu.\n[/][/]");
+            AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease enter the date: (Format: dd-MM-yyyy). Type 'Today' for current date or type 0 to return to Main Menu.\n[/][/]");
             string? userDateInput = Console.ReadLine();
-
             CheckReturnToMainMenu(userDateInput);
+
+            if (userDateInput.Trim().ToLower() == "today")
+            {
+                return DateTime.Today.ToString("dd-MM-yyyy");
+            }
 
             return Validation.ValidateDate(userDateInput);
         }
@@ -643,7 +627,7 @@ namespace CodingTracker.mxrt0
             return duration.ToString("hh\\:mm");
         }
 
-        private void DisplayTable(params CodingSession[] records)
+        private void DisplayTable<T>(params T[] records) where T : IDisplayable
         {
             if (!records.Any())
             {
@@ -651,13 +635,26 @@ namespace CodingTracker.mxrt0
                 return;
             }
             Table table = new Table();
-            foreach (var property in typeof(CodingSession).GetProperties())
+            foreach (var property in typeof(T).GetProperties())
             {
-                table.AddColumn(property.Name.ToString(), c => c.Centered());
+                if (property.Name != nameof(CodingGoal.IsCompleted))
+                {
+                    table.AddColumn(property.Name.ToString(), c => c.Centered());
+                }
+
             }
-            foreach (var codingSession in records)
+            foreach (var item in records)
             {
-                table.AddRow(new string[] { codingSession.Id.ToString(), codingSession.Date, codingSession.StartTime, codingSession.EndTime, codingSession.Duration });
+                if (item is CodingSession codingSession)
+                {
+                    table.AddRow(new string[] { codingSession.Id.ToString(), codingSession.Date, codingSession.StartTime, codingSession.EndTime, codingSession.Duration });
+                }
+                else if (item is CodingGoal goal)
+                {
+                    table.AddRow(new string[] { goal.Name, goal.StartDate.ToString("dd-MM-yyyy"),
+                        goal.CompletedTime.ToString("hh\\:mm"), goal.TimeTarget.ToString("hh\\:mm"), goal.Deadline.ToString("dd-MM-yyyy") });
+                }
+
             }
             table.Border(TableBorder.Rounded);
             table.ShowRowSeparators();
@@ -742,13 +739,13 @@ namespace CodingTracker.mxrt0
             string? startYearInput = Console.ReadLine();
             CheckReturnToMainMenu(startYearInput);
 
-            int startYear = Validation.ValidateYear(startYearInput);
+            int startYear = Validation.ValidateYears(startYearInput);
             CheckReturnToMainMenu(startYear.ToString());
 
             AnsiConsole.MarkupLine($"[magenta2][slowblink]\nPlease select end year : \n[/][/]");
             string? endYearInput = Console.ReadLine();
 
-            int endYear = Validation.ValidateYear(endYearInput);
+            int endYear = Validation.ValidateYears(endYearInput);
             CheckReturnToMainMenu(endYear.ToString());
 
             while (startYear > endYear)
@@ -757,7 +754,7 @@ namespace CodingTracker.mxrt0
                 endYearInput = Console.ReadLine();
                 CheckReturnToMainMenu(endYearInput);
 
-                endYear = Validation.ValidateYear(endYearInput);
+                endYear = Validation.ValidateYears(endYearInput);
                 CheckReturnToMainMenu(endYear.ToString());
             }
             return (startYear, endYear);

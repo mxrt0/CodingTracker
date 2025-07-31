@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using CodingTracker.mxrt0.Contracts;
 
 namespace CodingTracker.mxrt0
 {
-    public class CodingGoal
+    public class CodingGoal : IDisplayable
     {
         public CodingGoal(string name, DateTime startDate, TimeSpan timeTarget, DateTime deadline)
         {

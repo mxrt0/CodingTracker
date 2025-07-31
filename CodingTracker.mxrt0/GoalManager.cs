@@ -43,9 +43,9 @@ namespace CodingTracker.mxrt0
             return goalToUpdate;
         }
 
-        public string ValidateGoalWithNameExists(string? goalName = "")
+        public string EnsureGoalNameValid(string? goalName = "")
         {
-            while (string.IsNullOrEmpty(goalName.Trim()) || _goals.Any(g => string.Equals(g.Name, goalName, StringComparison.OrdinalIgnoreCase)))
+            while (!CheckGoalExists(goalName))
             {
                 AnsiConsole.MarkupLine("[red][italic]\nNo coding goal with this name was found. Try again or type 0 to return to Main Menu: \n[/][/]");
                 goalName = Console.ReadLine();
@@ -59,7 +59,7 @@ namespace CodingTracker.mxrt0
 
         public bool CheckGoalExists(string? goalName = "")
         {
-            return _goals?.Any(g => string.Equals(g.Name, goalName, StringComparison.OrdinalIgnoreCase)) ?? false;
+            return _goals?.Any(g => string.Equals(g.Name, goalName.Trim(), StringComparison.OrdinalIgnoreCase)) ?? false;
         }
         public bool CheckGoalReached(CodingGoal goal)
         {
@@ -98,6 +98,7 @@ namespace CodingTracker.mxrt0
                 AnsiConsole.MarkupLine($"[green bold]\nAverage daily coding time to reach goal in time: {dailyCodingToReachGoal.ToString("hh\\:mm")} hour(s)/minute(s).[/]");
             }
         }
+        public IReadOnlyCollection<CodingGoal> GetAllGoals() => _goals.AsReadOnly();
         private void LoadGoals()
         {
             if (!File.Exists(_goalsFilePath))
@@ -122,12 +123,10 @@ namespace CodingTracker.mxrt0
             if (File.Exists(_goalsFilePath))
             {
                 File.Delete(_goalsFilePath);
-                AnsiConsole.MarkupLine("[green bold]\nSuccessfully deleted all goals![/]");
+
                 LoadGoals();
                 return;
             }
-
-            AnsiConsole.MarkupLine("[red italic]\nYou have not set any goals yet![/]");
         }
 
         public TimeSpan CalculateDailyCodingTimeToReachGoal(TimeSpan completedTime, TimeSpan timeTarget, DateTime goalEndDate)
@@ -143,10 +142,11 @@ namespace CodingTracker.mxrt0
         {
             if (!_goals.Any())
             {
-                AnsiConsole.MarkupLine("[red][italic]No goals have been added.[/][/]");
+                AnsiConsole.MarkupLine("[red][italic]No goals have been set.[/][/]");
                 return false;
             }
             return true;
         }
+
     }
 }

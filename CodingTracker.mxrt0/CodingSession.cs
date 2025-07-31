@@ -1,6 +1,8 @@
-﻿namespace CodingTracker.mxrt0
+﻿using CodingTracker.mxrt0.Contracts;
+
+namespace CodingTracker.mxrt0
 {
-    public class CodingSession
+    public class CodingSession : IDisplayable
     {
         public CodingSession()
         {
